@@ -23,7 +23,6 @@ type Transaction struct {
 	SignedTx           string `json:"signedtx"`
 }
 
-
 func getAddressFromWif(wif *btcutil.WIF) btcutil.Address{
 	addressPubKey, err := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeUncompressed(), &chaincfg.MainNetParams)
 	PanicErr(err)
@@ -72,7 +71,6 @@ func createRedeemTransaction (destinationAddress btcutil.Address, amount int64, 
 	redeemTx.AddTxOut(redeemTxOut)
 	return redeemTx
 }
-
 func signTransaction(transaction *wire.MsgTx, inputIndex int, output *wire.TxOut, privateKey *btcec.PrivateKey){
 	// SignatureScript creates an input signature script for tx to spend BTC sent
 	// from a previous output to the owner of privKey. tx must include all
@@ -93,39 +91,24 @@ func signTransaction(transaction *wire.MsgTx, inputIndex int, output *wire.TxOut
 
 	transaction.TxIn[inputIndex].SignatureScript = sigScript
 }
-func CreateTransaction(secret string, destination string, amount int64, txHash string) (Transaction, error) {
-	var wif *btcutil.WIF
-	wif, _ 								= btcutil.DecodeWIF(secret)
-
-	var sourceAddress btcutil.Address 	= getAddressFromWif(wif)
-
-	//Coinbase transaction
-	var coinBaseInput 	*wire.TxIn 		= createCoinBaseInput(txHash)
-	var coinBaseOutput 	*wire.TxOut 	= createCoinbaseOutput(sourceAddress, amount)
-	var sourceTx 		*wire.MsgTx 	= createMsgTx(coinBaseInput, coinBaseOutput)
-	var sourceTxHash 	chainhash.Hash	= sourceTx.TxHash()
-
-	///Redeem transaction
-	destinationAddress, _ 				:= btcutil.DecodeAddress(destination, &chaincfg.MainNetParams)
-	var redeemTx 		*wire.MsgTx 	= createRedeemTransaction(destinationAddress, amount, sourceTxHash, 0)
-
-	//Sign the every input of the transaction
-	signTransaction(redeemTx, 0, sourceTx.TxOut[0], wif.PrivKey)
-
-	//Verify transaction
+func verifyTransaction(sourceOutput *wire.TxOut, transaction *wire.MsgTx, sourceInputIdx int, amount int64) (bool , error){
 	flags := txscript.StandardVerifyFlags
-	vm, err := txscript.NewEngine(sourceTx.TxOut[0].PkScript, redeemTx, 0, flags, nil, nil, amount)
+	vm, err := txscript.NewEngine(sourceOutput.PkScript, transaction, sourceInputIdx, flags, nil, nil, amount)
 	if err != nil {
-		return Transaction{}, err
+		return false, err
 	}
 	if err := vm.Execute(); err != nil {
-		return Transaction{}, err
+		return false, err
 	}
-
+	return true, nil
+}
+func createNewTransaction(sourceTx *wire.MsgTx, redeemTx *wire.MsgTx, amount int64, sourceAddress btcutil.Address, destinationAddress btcutil.Address) Transaction{
 	var unsignedTx bytes.Buffer
 	var signedTx bytes.Buffer
 	sourceTx.Serialize(&unsignedTx)
 	redeemTx.Serialize(&signedTx)
+
+	var sourceTxHash 	chainhash.Hash	= sourceTx.TxHash()
 
 	var transaction Transaction
 	transaction.TxId = sourceTxHash.String()
@@ -134,6 +117,34 @@ func CreateTransaction(secret string, destination string, amount int64, txHash s
 	transaction.SignedTx = hex.EncodeToString(signedTx.Bytes())
 	transaction.SourceAddress = sourceAddress.EncodeAddress()
 	transaction.DestinationAddress = destinationAddress.EncodeAddress()
+	return transaction
+}
+
+func CreateTransaction(secret string, destination string, amount int64, txHash string) (Transaction, error) {
+	var wif 			*btcutil.WIF
+	wif, _ 								= btcutil.DecodeWIF(secret)
+
+	var sourceAddress 	btcutil.Address	= getAddressFromWif(wif)
+
+	//Coinbase transaction
+	var coinBaseInput 	*wire.TxIn 		= createCoinBaseInput(txHash)
+	var coinBaseOutput 	*wire.TxOut 	= createCoinbaseOutput(sourceAddress, amount)
+	var sourceTx 		*wire.MsgTx 	= createMsgTx(coinBaseInput, coinBaseOutput)
+	var sourceTxHash 	chainhash.Hash	= sourceTx.TxHash()
+
+	//Redeem transaction
+	destinationAddress, _ 				:= btcutil.DecodeAddress(destination, &chaincfg.MainNetParams)
+	var redeemTx 		*wire.MsgTx 	= createRedeemTransaction(destinationAddress, amount, sourceTxHash, 0)
+
+	//Sign the every input of the transaction
+	signTransaction(redeemTx, 0, sourceTx.TxOut[0], wif.PrivKey)
+
+	//Verify every inputs of transaction
+	if res, err := verifyTransaction(sourceTx.TxOut[0], redeemTx, 0, amount); !res {
+		panic("Transaction not verified! Error : " + err.Error())
+	}
+
+	transaction := createNewTransaction(sourceTx, redeemTx, amount, sourceAddress, destinationAddress)
 	return transaction, nil
 }
 
