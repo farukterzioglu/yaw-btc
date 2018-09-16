@@ -4,10 +4,6 @@ github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f h1:bAs4lUbRJpnnkd9
 github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f/go.mod h1:TdznJufoqS23FtqVCzL0ZqgP5MqXbb4fg/WgDys70nA=
 github.com/btcsuite/btcutil v0.0.0-20180706230648-ab6388e0c60a h1:RQMUrEILyYJEoAT34XS/kLu40vC0+po/UfxrBBA4qZE=
 github.com/btcsuite/btcutil v0.0.0-20180706230648-ab6388e0c60a/go.mod h1:+5NJ2+qvTyV9exUAL/rxXi3DcLg2Ts+ymUAY5y4NvMg=
-github.com/farukterzioglu/yew-btc v1.0.0/go.mod h1:qW5NpS3wGvZRaYtlMN49uPSKj2koaOdp06hc/dy7bD4=
-github.com/farukterzioglu/yew-btc v1.0.1/go.mod h1:qW5NpS3wGvZRaYtlMN49uPSKj2koaOdp06hc/dy7bD4=
-github.com/farukterzioglu/yew-btc v1.0.2 h1:ykf+KBoeCAYjhq6i59DIqnutwnuvhmCLwSnnC93a+vU=
-github.com/farukterzioglu/yew-btc v1.0.2/go.mod h1:qW5NpS3wGvZRaYtlMN49uPSKj2koaOdp06hc/dy7bD4=
 github.com/farukterzioglu/yew-btc/btcWallet v0.0.0-20180916185332-cda60e75b810 h1:QG6Pt9wwZlFjLWplPmwvmb0fA6bd9sOkuhbH970VIM8=
 github.com/farukterzioglu/yew-btc/btcWallet v0.0.0-20180916185332-cda60e75b810/go.mod h1:mNg3QPhsuqkhznc722NWP7+FXUCqdoKMjjy5e9MPamo=
 golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b h1:2b9XGzhjiYsYPnKXoEfL7klWZQIt8IfyRCz62gCqqlQ=
