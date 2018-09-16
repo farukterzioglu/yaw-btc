@@ -1,4 +1,4 @@
-package main
+package btcWallet
 
 import (
 	"github.com/btcsuite/btcd/chaincfg"
