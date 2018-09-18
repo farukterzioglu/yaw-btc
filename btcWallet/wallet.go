@@ -41,7 +41,7 @@ func (wallet *Wallet) GetAddresses(passphrase string) error {
 	if err != nil {
 		return errors.New(`{ "message": "The password is not correct" }`)
 	}
-	for index, _ := range wallet.Coins {
+	for index := range wallet.Coins {
 		wallet.Coins[index].WIF = ""
 	}
 	return nil
