@@ -1,5 +1,6 @@
 package test
 
+/*
 import "testing"
 import (
 	btcWallet "github.com/farukterzioglu/yew-btc/btcWallet"
@@ -12,3 +13,4 @@ func TestWalletImport (t *testing.T){
 		t.Error("it is nil")
 	}
 }
+*/
