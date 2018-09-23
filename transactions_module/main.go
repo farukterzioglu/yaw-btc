@@ -56,7 +56,7 @@ func createMsgTx(input *wire.TxIn, output *wire.TxOut) *wire.MsgTx {
 func createRedeemTransaction (destinationAddress btcutil.Address, amount int64, sourceTxHash chainhash.Hash, sourceOutputIndex uint32) *wire.MsgTx {
 	redeemTx := wire.NewMsgTx(wire.TxVersion)
 
-	//model for previous transaction outputs
+	//model for previous transaction coutputs
 	prevOut := wire.NewOutPoint(&sourceTxHash, sourceOutputIndex)
 
 	//Add input
