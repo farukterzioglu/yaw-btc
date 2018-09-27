@@ -3,6 +3,8 @@ package networkConnection
 import (
 	"bytes"
 	"encoding/hex"
+	"testing"
+
 	_ "github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -10,31 +12,19 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"log"
 )
 
-type Transaction struct {
-	TxId               string `json:"txid"`
-	SourceAddress      string `json:"source_address"`
-	DestinationAddress string `json:"destination_address"`
-	Amount             int64  `json:"amount"`
-	UnsignedTx         string `json:"unsignedtx"`
-	SignedTx           string `json:"signedtx"`
-}
-
-func main() {
-	tx := createTransaction(
-		"e4a2c83e412237af5a85e297ff66eac4613268e1820b5baf67decb9eec5f4013",
+func TestWalletUseCases(t *testing.T) {
+	tx := createTransactionTest(
+		"FqBM82gKj2MXFurUjQaNVbbkXToU6k1fjvigSEMVf6WMDUd16jCj",
 		"SdjQCwuYWpo6V2CSFVL1RnYsHanGoJh6ZQ",
 		1,
 		"c9705822b3650b9c2c34980770ea8b6f7b6297909281c4b1871edc14584897a9")
 
 	println(tx)
-	//createBlock(tx)
-	//mineBlock()
 }
 
-func createTransaction(secret string, destination string, amount int64, txHash string) string {
+func createTransactionTest(secret string, destination string, amount int64, txHash string) string {
 	simNetParams := &chaincfg.SimNetParams
 
 	sourceUtxOHash, err := chainhash.NewHashFromStr(txHash)
@@ -88,26 +78,4 @@ func createTransaction(secret string, destination string, amount int64, txHash s
 	var signedTx bytes.Buffer
 	redeemTx.Serialize(&signedTx)
 	return hex.EncodeToString(signedTx.Bytes())
-}
-
-func createBlock(*wire.MsgTx) {
-}
-
-func mineBlock() {
-	createCoinbaseTx()
-	createCoincaseTx()
-}
-
-func createCoinbaseTx() {
-
-}
-
-func createCoincaseTx() {
-
-}
-
-func panicIfErr(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
 }
