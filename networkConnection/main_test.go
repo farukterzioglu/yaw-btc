@@ -14,61 +14,78 @@ import (
 	"github.com/btcsuite/btcutil"
 )
 
+const txFee = 10000
+
+type utxo struct {
+	Address     string
+	TxID        string
+	OutputIndex uint32
+	Script      string
+	Satoshis    int64
+	Height      int64
+}
+
 func TestWalletUseCases(t *testing.T) {
+	unspentTx := utxo{
+		Address:     "SZ8hKFdRsiTVedW4rzx8CWfK1wLAFjfQ4A",
+		TxID:        "19e952a5d0b57d30a35465626ca6a88a7784e491eeb1b550da731b188bde8c69",
+		OutputIndex: 0,
+		Script:      "76a91481def9eeefa2f84fa436a9d75da6336ae8318c1d88ac",
+		Satoshis:    5000000000,
+	}
+
 	tx := createTransactionTest(
 		"FqBM82gKj2MXFurUjQaNVbbkXToU6k1fjvigSEMVf6WMDUd16jCj",
 		"SdjQCwuYWpo6V2CSFVL1RnYsHanGoJh6ZQ",
 		1,
-		"c9705822b3650b9c2c34980770ea8b6f7b6297909281c4b1871edc14584897a9")
+		unspentTx)
 
 	println(tx)
 }
 
-func createTransactionTest(secret string, destination string, amount int64, txHash string) string {
+func createTransactionTest(secret string, destination string, amount int64, unspentTx utxo) string {
 	simNetParams := &chaincfg.SimNetParams
-
-	sourceUtxOHash, err := chainhash.NewHashFromStr(txHash)
-	var sourceUtxo *wire.OutPoint = wire.NewOutPoint(sourceUtxOHash, 0)
-	//Create input by using pointed output above
-	var sourceTxIn *wire.TxIn = wire.NewTxIn(sourceUtxo, nil, nil)
-
 	wif, err := btcutil.DecodeWIF(secret)
-	addresspubkey, err := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeUncompressed(), simNetParams)
-
-	sourceAddress, err := btcutil.DecodeAddress(addresspubkey.EncodeAddress(), simNetParams)
-
-	sourcePkScript, err := txscript.PayToAddrScript(sourceAddress)
-	sourceTxOut := wire.NewTxOut(amount, sourcePkScript)
-
-	var sourceTx *wire.MsgTx = wire.NewMsgTx(wire.TxVersion)
-	sourceTx.AddTxIn(sourceTxIn)
-	sourceTx.AddTxOut(sourceTxOut)
-	sourceTxHash := sourceTx.TxHash()
 
 	destinationAddress, err := btcutil.DecodeAddress(destination, simNetParams)
 
+	hash, err := chainhash.NewHashFromStr(unspentTx.TxID)
+
 	//Redeem tx
 	redeemTx := wire.NewMsgTx(wire.TxVersion)
-	destinationUtxo := wire.NewOutPoint(&sourceTxHash, 0)
+	outPoint := wire.NewOutPoint(hash, unspentTx.OutputIndex)
 
-	var redeemTxIn *wire.TxIn = wire.NewTxIn(destinationUtxo, nil, nil)
-	redeemTx.AddTxIn(redeemTxIn)
+	txIn := wire.NewTxIn(outPoint, nil, nil)
+	redeemTx.AddTxIn(txIn)
 
 	var destinationPkScript []byte
 	destinationPkScript, err = txscript.PayToAddrScript(destinationAddress)
 
-	redeemTxOut := wire.NewTxOut(amount, destinationPkScript)
+	// Pay the minimum network fee so that nodes will broadcast the tx.
+	//TODO : ????
+	outCoin := unspentTx.Satoshis - txFee
+
+	redeemTxOut := wire.NewTxOut(outCoin, destinationPkScript)
 	redeemTx.AddTxOut(redeemTxOut)
+
+	addresspubkey, err := btcutil.NewAddressPubKey(
+		wif.PrivKey.PubKey().SerializeUncompressed(),
+		simNetParams)
+	sourceAddress, err := btcutil.DecodeAddress(addresspubkey.EncodeAddress(), simNetParams)
+	sourcePkScript, err := txscript.PayToAddrScript(sourceAddress)
 
 	//Sign the transaction
 	sigScript, err := txscript.SignatureScript(
 		redeemTx, 0,
-		sourceTx.TxOut[0].PkScript, txscript.SigHashAll, wif.PrivKey, false)
+		sourcePkScript,
+		txscript.SigHashAll,
+		wif.PrivKey,
+		false)
 
 	redeemTx.TxIn[0].SignatureScript = sigScript
 
 	flags := txscript.StandardVerifyFlags
-	vm, err := txscript.NewEngine(sourceTx.TxOut[0].PkScript, redeemTx, 0, flags, nil, nil, amount)
+	vm, err := txscript.NewEngine(sourcePkScript, redeemTx, 0, flags, nil, nil, amount)
 
 	err = vm.Execute()
 	if err != nil {
